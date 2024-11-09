@@ -62,20 +62,20 @@ create table ekspedisi
     unique (nama_ekspedisi)
 ) engine InnoDB;
 
-insert into ekspedisi (nama_ekspedisi)
-values ('Langsung'),
-       ('POS Indonesia'),
-       ('J&T'),
-       ('SAP Express'),
-       ('Anteraja'),
-       ('Pengiriman Barang Paxel'),
-       ('Grab Xpress'),
-       ('Ninja Express'),
-       ('Lion Parcel'),
-       ('SiCepat'),
-       ('TIKI'),
-       ('JNE'),
-       ('GoSend');
+insert into ekspedisi (id, nama_ekspedisi)
+values (1, 'Langsung'),
+       (2, 'POS Indonesia'),
+       (3, 'J&T'),
+       (4, 'SAP Express'),
+       (5, 'Anteraja'),
+       (6, 'Pengiriman Barang Paxel'),
+       (7, 'Grab Xpress'),
+       (8, 'Ninja Express'),
+       (9, 'Lion Parcel'),
+       (10, 'SiCepat'),
+       (11, 'TIKI'),
+       (12, 'JNE'),
+       (13, 'GoSend');
 
 create table pengirim
 (
@@ -97,9 +97,9 @@ create table posisi_surat
     unique (keterangan_posisi)
 ) engine InnoDB;
 
-insert into posisi_surat (keterangan_posisi)
-values ('TPST'),
-       ('Bidang');
+insert into posisi_surat (id, keterangan_posisi)
+values (1, 'TPST'),
+       (2, 'Bidang');
 
 create table status
 (
@@ -152,12 +152,12 @@ create table keterangan
     primary key (id)
 ) engine InnoDB;
 
-insert into keterangan(nama_keterangan)
-values ('cetak tanda terima'),
-       ('upload scan berkas'),
-       ('diubah'),
-       ('dihapus'),
-       ('diterima bidang');
+insert into keterangan(id, nama_keterangan)
+values (1, 'cetak tanda terima'),
+       (2, 'upload scan berkas'),
+       (3, 'diubah'),
+       (4, 'dihapus'),
+       (5, 'diterima bidang');
 
 create table detail_surat
 (
