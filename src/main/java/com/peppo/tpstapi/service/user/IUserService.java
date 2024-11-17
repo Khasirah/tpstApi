@@ -28,4 +28,6 @@ public interface IUserService {
     String delete(User user, String idUser);
 
     Page<UserResponse> search(User user, SearchUserRequest request);
+
+    Long getPetugasCount();
 }

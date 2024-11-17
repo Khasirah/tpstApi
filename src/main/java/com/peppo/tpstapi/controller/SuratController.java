@@ -19,7 +19,6 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 
 @RestController
-@Slf4j
 @CrossOrigin
 public class SuratController {
 
@@ -28,7 +27,6 @@ public class SuratController {
 
     @PostMapping(
         path = "/api/surat",
-        consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
         produces = MediaType.APPLICATION_JSON_VALUE
     )
     public WebResponse<String> createSurat(

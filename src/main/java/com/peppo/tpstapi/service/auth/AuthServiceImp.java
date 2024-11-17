@@ -47,7 +47,7 @@ public class AuthServiceImp implements IAuthService {
     }
 
     private Long next1Day() {
-        return System.currentTimeMillis() + (1000 * 60 * 24);
+        return System.currentTimeMillis() + (1000 * 60 * 60 * 24);
     }
 
     @Override

@@ -557,7 +557,7 @@ class SuratControllerTest {
     }
 
     @Test
-    void testGetSuratFailedNotLogin() throws Exception {
+    void    testGetSuratFailedNotLogin() throws Exception {
         createSuratTest(2);
         mockMvc.perform(
             get("/api/surat/2")

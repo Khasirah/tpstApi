@@ -1,10 +1,9 @@
 package com.peppo.tpstapi.service.surat;
 
-import com.peppo.tpstapi.entity.DetailSurat;
-import com.peppo.tpstapi.entity.Pengirim;
-import com.peppo.tpstapi.entity.Surat;
-import com.peppo.tpstapi.entity.User;
+import com.peppo.tpstapi.entity.*;
 import com.peppo.tpstapi.model.JenisKeterangan;
+import com.peppo.tpstapi.model.JenisPosisiSurat;
+import com.peppo.tpstapi.model.JenisStatus;
 import com.peppo.tpstapi.model.PesanError;
 import com.peppo.tpstapi.model.request.CreateSuratRequest;
 import com.peppo.tpstapi.model.request.SearchSuratByYearRequest;
@@ -16,10 +15,7 @@ import com.peppo.tpstapi.service.validation.ValidationServiceImp;
 import jakarta.persistence.criteria.Predicate;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -222,6 +218,42 @@ public class SuratServiceImp implements ISuratService {
         return surat.getNomorSurat()+" berhasil dihapus";
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public Integer getTotalActiveSurat() {
+        Status status = statusRepository.findById(JenisStatus.active.id)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, PesanError.status.message)
+            );
+        return suratRepository.countSuratByStatus(status)
+            .orElse(0);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Integer getTotalSuratAnTPST() {
+        Status status = statusRepository.findById(JenisStatus.active.id)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, PesanError.status.message));
+
+        PosisiSurat posisiSurat = posisiSuratRepository.findById(JenisPosisiSurat.tpst.id)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, PesanError.posisiSurat.message));
+
+        return suratRepository.countSuratByPosisiSuratAndStatus(posisiSurat, status)
+            .orElse(0);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ForListSuratResponse> getNewestSurat() {
+        Pageable pageable = PageRequest.of(
+            0, 10, Sort.by(Sort.Direction.DESC, "createdDate")
+        );
+        Page<Surat> surats = suratRepository.findAll(pageable);
+        return surats.getContent()
+            .stream()
+            .map(this::toForListSuratResponse)
+            .toList();
+    }
+
     @Transactional
     protected void createDetailSurat(
         Surat suratToBeSave,
@@ -295,5 +327,10 @@ public class SuratServiceImp implements ISuratService {
 
         return pengirimRepository.findByNamaPengirim(namaPengirim)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, PesanError.pengirim.message));
+    }
+
+    @Override
+    public Long getTotalSuratByUser(User user) {
+        return suratRepository.countSuratByPetugasTPST(user).orElse(0L);
     }
 }

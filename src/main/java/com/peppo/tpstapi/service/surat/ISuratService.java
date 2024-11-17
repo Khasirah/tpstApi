@@ -9,6 +9,8 @@ import com.peppo.tpstapi.model.response.SuratResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
+
 public interface ISuratService {
 
     void createSurat(
@@ -31,4 +33,12 @@ public interface ISuratService {
     );
 
     String deleteSurat(User user, Integer idSurat);
+
+    Integer getTotalActiveSurat();
+
+    Integer getTotalSuratAnTPST();
+
+    List<ForListSuratResponse> getNewestSurat();
+
+    Long getTotalSuratByUser(User user);
 }

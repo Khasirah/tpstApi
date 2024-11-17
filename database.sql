@@ -174,7 +174,11 @@ create table detail_surat
 
 desc surat;
 
-delete from users;
+delete from surat;
 
 select *
-from users;
+from surat
+order by created_date desc;
+
+select *
+from surat;
