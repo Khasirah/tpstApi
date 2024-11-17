@@ -11,4 +11,7 @@ import java.util.Optional;
 public interface UserRepository extends JpaRepository<User, String>, JpaSpecificationExecutor<User> {
 
     Optional<User> findFirstByToken(String token);
+
+    Optional<Long> countByIdUserNot(String idUserNo);
+
 }

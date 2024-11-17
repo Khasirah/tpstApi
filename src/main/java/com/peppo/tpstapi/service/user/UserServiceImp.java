@@ -239,4 +239,11 @@ public class UserServiceImp implements IUserService {
 
         return new PageImpl<>(userResponses, pageable, users.getTotalElements());
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Long getPetugasCount() {
+        return userRepository.countByIdUserNot("111111111")
+            .orElse(0L);
+    }
 }
