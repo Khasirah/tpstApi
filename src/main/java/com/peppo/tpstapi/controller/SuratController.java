@@ -9,7 +9,6 @@ import com.peppo.tpstapi.model.response.PagingResponse;
 import com.peppo.tpstapi.model.response.SuratResponse;
 import com.peppo.tpstapi.model.response.WebResponse;
 import com.peppo.tpstapi.service.surat.SuratServiceImp;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.MediaType;

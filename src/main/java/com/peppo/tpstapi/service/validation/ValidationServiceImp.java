@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -31,10 +32,11 @@ public class ValidationServiceImp implements IValidationService {
     }
 
     @Override
-    public void isAdmin(User user) {
+    public boolean isAdmin(User user) {
         if (!Objects.equals(user.getKelompok().getId(), JenisKelompok.admin.id)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized You are not allowed to access this resource");
         }
+        return true;
     }
 
     @Override

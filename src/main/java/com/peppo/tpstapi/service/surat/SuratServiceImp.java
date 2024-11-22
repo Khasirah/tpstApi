@@ -128,6 +128,14 @@ public class SuratServiceImp implements ISuratService {
                     )
                 );
             }
+
+            if (!validationServiceImp.isAdmin(user)) {
+                Status activeStatus = statusRepository.findById(1).orElse(null);
+                predicates.add(
+                    criteriaBuilder.equal(root.get("status"), activeStatus)
+                );
+            }
+
             return query.where(predicates.toArray(new Predicate[]{})).getRestriction();
         });
 
@@ -158,7 +166,7 @@ public class SuratServiceImp implements ISuratService {
             .namaPengirim(surat.getPengirim().getNamaPengirim())
             .perihal(surat.getPerihal())
             .namaBagian(surat.getBagian().getNamaBagian())
-            .posisiSurat(surat.getPosisiSurat().getKeteranganPosisi())
+            .posisiSurat(surat.getPosisiSurat())
             .namaEkspedisi(surat.getEkspedisi().getNamaEkspedisi())
             .nomorSeriEkspedisi(surat.getNomorSeriEkspedisi())
             .kontak(surat.getKontak())
@@ -215,7 +223,7 @@ public class SuratServiceImp implements ISuratService {
 
         suratRepository.save(surat);
         createDetailSurat(surat, user, JenisKeterangan.dihapus.id);
-        return surat.getNomorSurat()+" berhasil dihapus";
+        return surat.getNomorSurat() + " berhasil dihapus";
     }
 
     @Override
@@ -304,6 +312,7 @@ public class SuratServiceImp implements ISuratService {
         return nomorSurat
             .toLowerCase()
             .replaceAll("[\\s\\\\/;]", "_")
+            .concat("_")
             .concat(Long.toString(System.currentTimeMillis()))
             .concat(".")
             .concat(

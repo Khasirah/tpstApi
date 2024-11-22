@@ -7,7 +7,7 @@ public interface IValidationService {
 
     void validate(Object request);
 
-    void isAdmin(User user);
+    boolean isAdmin(User user);
 
     void isCsv(MultipartFile csvFile);
 

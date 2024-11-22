@@ -1,5 +1,6 @@
 package com.peppo.tpstapi.model.response;
 
+import com.peppo.tpstapi.entity.PosisiSurat;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -23,7 +24,7 @@ public class SuratResponse {
 
     private String namaBagian;
 
-    private String posisiSurat;
+    private PosisiSurat posisiSurat;
 
     private String namaEkspedisi;
 
