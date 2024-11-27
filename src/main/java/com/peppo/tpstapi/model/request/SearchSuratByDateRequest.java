@@ -6,15 +6,16 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Date;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class SearchSuratByYearRequest {
+public class SearchSuratByDateRequest {
 
-    private String nomorSurat;
-
-    private Integer tahun;
+    @NotNull
+    private Date tanggalTerimaSurat;
 
     @NotNull
     private Integer page;

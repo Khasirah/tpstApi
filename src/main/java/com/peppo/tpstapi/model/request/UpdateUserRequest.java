@@ -11,11 +11,6 @@ import lombok.NoArgsConstructor;
 @Builder
 public class UpdateUserRequest {
 
-    private String namaUser;
-
     private String password;
 
-    private Integer idBagian;
-
-    private Integer idKelompok;
 }

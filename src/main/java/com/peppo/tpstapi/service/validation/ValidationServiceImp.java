@@ -2,6 +2,8 @@ package com.peppo.tpstapi.service.validation;
 
 import com.peppo.tpstapi.entity.User;
 import com.peppo.tpstapi.model.JenisKelompok;
+import com.peppo.tpstapi.model.PesanError;
+import com.peppo.tpstapi.repository.UserRepository;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Validator;
@@ -9,7 +11,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -22,6 +23,9 @@ public class ValidationServiceImp implements IValidationService {
 
     @Autowired
     private Validator validator;
+
+    @Autowired
+    private UserRepository userRepository;
 
     @Override
     public void validate(Object request) {
@@ -53,5 +57,14 @@ public class ValidationServiceImp implements IValidationService {
         if (!TYPE.equals(pdfFile.getContentType())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "file type must be pdf");
         }
+    }
+
+    @Override
+    public boolean isUserExist(String idUser) {
+        User user = userRepository.findById(idUser).orElse(null);
+        if (user == null) {
+            return false;
+        }
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, idUser + " " + PesanError.userExist.message);
     }
 }

@@ -9,6 +9,8 @@ public enum PesanError {
     pengirim("pengirim not found"),
     surat("surat not found"),
     keterangan("keterangan not found"),
+    userExist("user exist"),
+    pdfNotFound("pdf not found"),
     kelompok("kelompok not found");
 
     public final String message;

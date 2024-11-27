@@ -640,10 +640,7 @@ class UserControllerTest {
     void testUpdateCurrentUserFailedNotLogin() throws Exception {
 
         UpdateUserRequest request = new UpdateUserRequest();
-        request.setNamaUser("user10");
         request.setPassword("user10");
-        request.setIdBagian(JenisBidang.dp3.id);
-        request.setIdKelompok(JenisKelompok.user.id);
 
         mockMvc.perform(
                 patch("/api/users/current")
@@ -668,10 +665,7 @@ class UserControllerTest {
         createUserTest(null, null);
 
         UpdateUserRequest request = new UpdateUserRequest();
-        request.setNamaUser("user10");
         request.setPassword("user10");
-        request.setIdBagian(10);
-        request.setIdKelompok(JenisKelompok.user.id);
 
         mockMvc.perform(
                 patch("/api/users/current")
@@ -697,10 +691,7 @@ class UserControllerTest {
         createUserTest(null, null);
 
         UpdateUserRequest request = new UpdateUserRequest();
-        request.setNamaUser("user10");
         request.setPassword("user10");
-        request.setIdBagian(JenisBidang.dp3.id);
-        request.setIdKelompok(10);
 
         mockMvc.perform(
                 patch("/api/users/current")
@@ -726,9 +717,7 @@ class UserControllerTest {
         createUserTest(null, null);
 
         UpdateUserRequest request = new UpdateUserRequest();
-        request.setNamaUser("user10");
         request.setPassword("user10");
-        request.setIdBagian(JenisBidang.dp3.id);
 
         mockMvc.perform(
                 patch("/api/users/current")

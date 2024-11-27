@@ -180,4 +180,5 @@ where id_user ='111111111';
 delete from detail_surat;
 delete from surat;
 
-select * from bagian;
+select * from users;
+select * from surat;

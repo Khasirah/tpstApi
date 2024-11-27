@@ -473,7 +473,7 @@ class SuratControllerTest {
     }
 
     @Test
-    void testListSuratByYearFailedNotLogin() throws Exception {
+    void testSearchSuratFailedNotLogin() throws Exception {
         mockMvc.perform(
             get("/api/surat")
                 .param("year", "2024")
@@ -494,7 +494,7 @@ class SuratControllerTest {
     }
 
     @Test
-    void testListSuratByYearSuccess() throws Exception {
+    void testSearchSuratSuccess() throws Exception {
 
         for (int i = 0; i < 100; i++) {
             createSuratTest(i);
@@ -526,7 +526,7 @@ class SuratControllerTest {
     }
 
     @Test
-    void testListSuratByYearSuccessNotFound() throws Exception {
+    void testSearchSuratSuccessNotFound() throws Exception {
 
         for (int i = 0; i < 100; i++) {
             createSuratTest(i);
@@ -954,5 +954,168 @@ class SuratControllerTest {
             assertNotNull(detailSurat);
             assertEquals(JenisKeterangan.dihapus.id, detailSurat.getKeterangan().getId());
         });
+    }
+
+    @Test
+    void testUploadBerkasFailedNotLogin() throws Exception {
+        createSuratTest(2);
+        List<Surat> all = suratRepository.findAll();
+        Surat first = all.getFirst();
+
+        mockMvc.perform(
+            multipart("/api/surat/"+first.getId()+"/upload")
+                .file(new MockMultipartFile(
+                    "pdfFile",
+                    "cv.pdf",
+                    "application/pdf",
+                    getClass().getResourceAsStream("/pdfData/cv.pdf")
+                ))
+        ).andExpectAll(
+            status().isUnauthorized()
+        ).andDo(result -> {
+            WebResponse<String> response = objectMapper.readValue(
+                result.getResponse().getContentAsString(),
+                new TypeReference<>() {
+                }
+            );
+
+            assertNotNull(response.getErrors());
+            log.info(response.getErrors());
+        });
+    }
+
+    @Test
+    void testUploadBerkasFailedNotPdf() throws Exception {
+        createSuratTest(2);
+        List<Surat> all = suratRepository.findAll();
+        Surat first = all.getFirst();
+
+        mockMvc.perform(
+            multipart("/api/surat/"+first.getId()+"/upload")
+                .file(new MockMultipartFile(
+                    "pdfFile",
+                    null,
+                    "text/csv",
+                    getClass().getResourceAsStream("/pdfData/users.csv")
+                ))
+                .header("X-API-TOKEN", "user2Test")
+        ).andExpectAll(
+            status().isBadRequest()
+        ).andDo(result -> {
+            WebResponse<String> response = objectMapper.readValue(
+                result.getResponse().getContentAsString(),
+                new TypeReference<>() {
+                }
+            );
+
+            assertNotNull(response.getErrors());
+            assertTrue(response.getErrors().contains("file type must be pdf"));
+            log.info(response.getErrors());
+        });
+    }
+
+    @Test
+    void testUploadBerkasSuccess() throws Exception {
+        createSuratTest(2);
+        List<Surat> all = suratRepository.findAll();
+        Surat first = all.getFirst();
+
+        mockMvc.perform(
+            multipart("/api/surat/"+first.getId()+"/upload")
+                .file(new MockMultipartFile(
+                    "pdfFile",
+                    "cv.pdf",
+                    "application/pdf",
+                    getClass().getResourceAsStream("/pdfData/cv.pdf")
+                ))
+                .header("X-API-TOKEN", "user2Test")
+        ).andExpectAll(
+            status().isOk()
+        ).andDo(result -> {
+            WebResponse<String> response = objectMapper.readValue(
+                result.getResponse().getContentAsString(),
+                new TypeReference<>() {
+                }
+            );
+
+            assertNull(response.getErrors());
+            assertNotNull(response.getData());
+            assertTrue(response.getData().contains(first.getNomorSurat()));
+            log.info(response.getData());
+        });
+    }
+
+    @Test
+    void testDownloadBerkasFailedNotLogin() throws Exception {
+        createSuratTest(2);
+        List<Surat> all = suratRepository.findAll();
+        Surat first = all.getFirst();
+
+        mockMvc.perform(
+            multipart("/api/surat/"+first.getId()+"/upload")
+                .file(new MockMultipartFile(
+                    "pdfFile",
+                    "cv.pdf",
+                    "application/pdf",
+                    getClass().getResourceAsStream("/pdfData/cv.pdf")
+                ))
+                .header("X-API-TOKEN", "user2Test")
+        ).andDo(result -> {});
+
+        mockMvc.perform(
+            get("/api/surat/"+first.getId()+"/download")
+        ).andExpectAll(
+            status().isUnauthorized()
+        ).andDo(result -> {
+            WebResponse<String> response = objectMapper.readValue(
+                result.getResponse().getContentAsString(),
+                new TypeReference<>() {
+                }
+            );
+
+            assertNotNull(response.getErrors());
+            assertTrue(response.getErrors().contains("Unauthorized You must login first"));
+            log.info(response.getErrors());
+        });
+    }
+
+    @Test
+    void testDownloadBerkasFailedNotFound() throws Exception {
+        createSuratTest(2);
+        List<Surat> all = suratRepository.findAll();
+        Surat first = all.getFirst();
+
+        mockMvc.perform(
+            multipart("/api/surat/"+first.getId()+"/upload")
+                .file(new MockMultipartFile(
+                    "pdfFile",
+                    "cv.pdf",
+                    "application/pdf",
+                    getClass().getResourceAsStream("/pdfData/cv.pdf")
+                ))
+                .header("X-API-TOKEN", "user2Test")
+        ).andDo(result -> {});
+
+        mockMvc.perform(
+            get("/api/surat/"+first.getId()+1+"/download")
+                .header("X-API-TOKEN", "user2Test")
+        ).andExpectAll(
+            status().isNotFound()
+        ).andDo(result -> {
+            WebResponse<String> response = objectMapper.readValue(
+                result.getResponse().getContentAsString(),
+                new TypeReference<>() {
+                }
+            );
+
+            assertNotNull(response.getErrors());
+            assertTrue(response.getErrors().contains("not found"));
+            log.info(response.getErrors());
+        });
+    }
+
+    @Test
+    void testDownloadBerkasSuccess() {
+
     }
 }

@@ -114,6 +114,9 @@ public class UserServiceImp implements IUserService {
         validationServiceImp.isCsv(csvFile);
 
         Set<User> users = csvHelper.parseCSV(csvFile);
+        users.forEach(user1 -> {
+            validationServiceImp.isUserExist(user1.getIdUser());
+        });
         userRepository.saveAll(users);
     }
 
@@ -140,16 +143,12 @@ public class UserServiceImp implements IUserService {
     public UserResponse updateCurrentUser(User user, UpdateUserRequest updateUserRequest) {
         validationServiceImp.validate(updateUserRequest);
 
-        User userToBeSave = checkNonNull(
-            user,
-            updateUserRequest.getNamaUser(),
-            updateUserRequest.getPassword(),
-            updateUserRequest.getIdBagian(),
-            updateUserRequest.getIdKelompok()
-        );
+        if (Objects.nonNull(updateUserRequest.getPassword())) {
+            user.setPassword(BCrypt.hashpw(updateUserRequest.getPassword(), BCrypt.gensalt()));
+        }
 
-        userRepository.save(userToBeSave);
-        return toUserResponse(userToBeSave);
+        userRepository.save(user);
+        return toUserResponse(user);
     }
 
     @Override

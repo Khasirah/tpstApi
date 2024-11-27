@@ -2,13 +2,16 @@ package com.peppo.tpstapi.service.surat;
 
 import com.peppo.tpstapi.entity.User;
 import com.peppo.tpstapi.model.request.CreateSuratRequest;
+import com.peppo.tpstapi.model.request.SearchSuratByDateRequest;
 import com.peppo.tpstapi.model.request.SearchSuratByYearRequest;
 import com.peppo.tpstapi.model.request.UpdateSuratRequest;
 import com.peppo.tpstapi.model.response.ForListSuratResponse;
 import com.peppo.tpstapi.model.response.SuratResponse;
+import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.Date;
 import java.util.List;
 
 public interface ISuratService {
@@ -41,4 +44,10 @@ public interface ISuratService {
     List<ForListSuratResponse> getNewestSurat();
 
     Long getTotalSuratByUser(User user);
+
+    String handleUploadBerkas(User user, Integer idSurat, MultipartFile file);
+
+    Resource handleDownloadBerkas(User user, Integer idSurat);
+
+    Page<ForListSuratResponse> listSuratByDate(User user, SearchSuratByDateRequest request);
 }

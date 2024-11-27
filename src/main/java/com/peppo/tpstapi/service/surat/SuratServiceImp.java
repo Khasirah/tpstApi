@@ -1,11 +1,9 @@
 package com.peppo.tpstapi.service.surat;
 
 import com.peppo.tpstapi.entity.*;
-import com.peppo.tpstapi.model.JenisKeterangan;
-import com.peppo.tpstapi.model.JenisPosisiSurat;
-import com.peppo.tpstapi.model.JenisStatus;
-import com.peppo.tpstapi.model.PesanError;
+import com.peppo.tpstapi.model.*;
 import com.peppo.tpstapi.model.request.CreateSuratRequest;
+import com.peppo.tpstapi.model.request.SearchSuratByDateRequest;
 import com.peppo.tpstapi.model.request.SearchSuratByYearRequest;
 import com.peppo.tpstapi.model.request.UpdateSuratRequest;
 import com.peppo.tpstapi.model.response.ForListSuratResponse;
@@ -15,6 +13,8 @@ import com.peppo.tpstapi.service.validation.ValidationServiceImp;
 import jakarta.persistence.criteria.Predicate;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
 import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
@@ -25,6 +25,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -129,10 +130,19 @@ public class SuratServiceImp implements ISuratService {
                 );
             }
 
-            if (!validationServiceImp.isAdmin(user)) {
+            if (!Objects.equals(user.getKelompok().getId(), JenisKelompok.admin.id)) {
                 Status activeStatus = statusRepository.findById(1).orElse(null);
                 predicates.add(
                     criteriaBuilder.equal(root.get("status"), activeStatus)
+                );
+            }
+
+            if (Objects.nonNull(request.getNomorSurat())) {
+                predicates.add(
+                    criteriaBuilder.like(
+                        root.get("nomorSurat"),
+                        "%" + request.getNomorSurat() + "%"
+                    )
                 );
             }
 
@@ -341,5 +351,60 @@ public class SuratServiceImp implements ISuratService {
     @Override
     public Long getTotalSuratByUser(User user) {
         return suratRepository.countSuratByPetugasTPST(user).orElse(0L);
+    }
+
+    @Override
+    @Transactional
+    public String handleUploadBerkas(User user, Integer idSurat, MultipartFile file) {
+        Surat surat = suratRepository.findById(idSurat)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, PesanError.surat.message));
+
+        Surat suratToBeSave = processPdfFile(surat, file);
+        suratToBeSave.setUpdatedDate(LocalDateTime.now());
+
+        createDetailSurat(suratToBeSave, user, JenisKeterangan.diubah.id);
+        suratRepository.save(suratToBeSave);
+        return suratToBeSave.getNomorSurat();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Resource handleDownloadBerkas(User user, Integer idSurat) {
+        Surat surat = suratRepository.findById(idSurat)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, PesanError.surat.message));
+
+        Path uploadDir = Paths.get(UPLOADPATH);
+        try {
+            Path filePath = uploadDir.resolve(surat.getNamaBerkas()).normalize();
+            Resource resource = new UrlResource(filePath.toUri());
+            if (resource.exists() || resource.isReadable()) {
+                return resource;
+            } else {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, PesanError.surat.message);
+            }
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<ForListSuratResponse> listSuratByDate(
+        User user, SearchSuratByDateRequest request
+    ) {
+        validationServiceImp.validate(request);
+        Specification<Surat> specification = ((root, _, criteriaBuilder) -> criteriaBuilder.equal(
+            root.get("createdDate"),
+            request.getTanggalTerimaSurat()
+        ));
+
+        Pageable pageable = PageRequest.of(request.getPage(), request.getSize());
+        Page<Surat> suratPage = suratRepository.findAll(specification, pageable);
+        List<ForListSuratResponse> responseList = suratPage.getContent()
+            .stream()
+            .map(this::toForListSuratResponse)
+            .toList();
+
+        return new PageImpl<>(responseList, pageable, suratPage.getTotalElements());
     }
 }

@@ -12,4 +12,6 @@ public interface IValidationService {
     void isCsv(MultipartFile csvFile);
 
     void isPdf (MultipartFile pdfFile);
+
+    boolean isUserExist(String idUser);
 }

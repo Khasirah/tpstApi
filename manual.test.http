@@ -8,3 +8,8 @@ Accept: application/json
   "idUser": "111111111",
   "password": "admin123456"
 }
+
+### b085e151-dfbf-4df7-a3da-e570545404e6
+
+GET localhost:8080/api/surat/2587/download
+X-API-TOKEN: b085e151-dfbf-4df7-a3da-e570545404e6
