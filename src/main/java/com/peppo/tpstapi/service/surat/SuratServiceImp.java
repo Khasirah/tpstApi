@@ -2,10 +2,7 @@ package com.peppo.tpstapi.service.surat;
 
 import com.peppo.tpstapi.entity.*;
 import com.peppo.tpstapi.model.*;
-import com.peppo.tpstapi.model.request.CreateSuratRequest;
-import com.peppo.tpstapi.model.request.SearchSuratByDateRequest;
-import com.peppo.tpstapi.model.request.SearchSuratByYearRequest;
-import com.peppo.tpstapi.model.request.UpdateSuratRequest;
+import com.peppo.tpstapi.model.request.*;
 import com.peppo.tpstapi.model.response.ForListSuratResponse;
 import com.peppo.tpstapi.model.response.SuratResponse;
 import com.peppo.tpstapi.repository.*;
@@ -29,6 +26,7 @@ import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 
@@ -146,6 +144,7 @@ public class SuratServiceImp implements ISuratService {
                 );
             }
 
+            assert query != null;
             return query.where(predicates.toArray(new Predicate[]{})).getRestriction();
         });
 
@@ -314,6 +313,7 @@ public class SuratServiceImp implements ISuratService {
             .tanggalTerima(surat.getCreatedDate())
             .idPetugasTpst(surat.getPetugasTPST().getIdUser())
             .namaPetugasTpst(surat.getPetugasTPST().getNamaUser())
+            .posisiSurat(surat.getPosisiSurat())
             .build();
     }
 
@@ -389,14 +389,37 @@ public class SuratServiceImp implements ISuratService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<ForListSuratResponse> listSuratByDate(
+    public Page<ForListSuratResponse> listSuratByDateAndBagian(
         User user, SearchSuratByDateRequest request
     ) {
         validationServiceImp.validate(request);
-        Specification<Surat> specification = ((root, _, criteriaBuilder) -> criteriaBuilder.equal(
-            root.get("createdDate"),
-            request.getTanggalTerimaSurat()
-        ));
+        Specification<Surat> specification = ((root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+
+            predicates.add(
+                criteriaBuilder.equal(
+                    criteriaBuilder.function(
+                        "DATE",
+                        Date.class,
+                        root.get("createdDate")
+                    ),
+                    request.getTanggalTerimaSurat()
+                )
+            );
+
+            if (!Objects.equals(user.getBagian().getId(), JenisBidang.admin.id)) {
+                predicates.add(
+                    criteriaBuilder.equal(
+                        root.get("bagian"),
+                        user.getBagian()
+                    )
+                );
+            }
+
+            assert query != null;
+            return query.where(predicates.toArray(new Predicate[]{})).getRestriction();
+        });
+
 
         Pageable pageable = PageRequest.of(request.getPage(), request.getSize());
         Page<Surat> suratPage = suratRepository.findAll(specification, pageable);
@@ -406,5 +429,28 @@ public class SuratServiceImp implements ISuratService {
             .toList();
 
         return new PageImpl<>(responseList, pageable, suratPage.getTotalElements());
+    }
+
+    @Override
+    @Transactional
+    public String archiveSurats(User user, ArchiveSuratsRequest request) {
+        validationServiceImp.validate(request);
+        request.getListIdSurat().forEach(idSurat -> {
+            Surat surat = suratRepository.findById(idSurat)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, idSurat +" "+ PesanError.surat.message));
+
+            validationServiceImp.isArchiveByStaff(surat, user);
+            validationServiceImp.isArchive(surat);
+
+            surat.setPosisiSurat(posisiSuratRepository.findById(2)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, PesanError.posisiSurat.message)));
+            surat.setTanggalTerimaBidang(LocalDateTime.now());
+            surat.setPetugasBidang(user);
+            surat.setUpdatedDate(LocalDateTime.now());
+            suratRepository.save(surat);
+
+            createDetailSurat(surat, user, JenisKeterangan.diterimaBidang.id);
+        });
+        return "berhasil arsip "+request.getListIdSurat().size()+" surat";
     }
 }

@@ -11,6 +11,8 @@ public enum PesanError {
     keterangan("keterangan not found"),
     userExist("user exist"),
     pdfNotFound("pdf not found"),
+    unauthorizedToArchive("unauthorized to archive"),
+    alreadyArchived("already archived"),
     kelompok("kelompok not found");
 
     public final String message;

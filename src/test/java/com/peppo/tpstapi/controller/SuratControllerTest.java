@@ -10,6 +10,7 @@ import com.peppo.tpstapi.model.JenisBidang;
 import com.peppo.tpstapi.model.JenisKelompok;
 import com.peppo.tpstapi.model.JenisKeterangan;
 import com.peppo.tpstapi.model.PesanError;
+import com.peppo.tpstapi.model.request.ArchiveSuratsRequest;
 import com.peppo.tpstapi.model.request.CreateSuratRequest;
 import com.peppo.tpstapi.model.request.UpdateSuratRequest;
 import com.peppo.tpstapi.model.response.ForListSuratResponse;
@@ -27,7 +28,9 @@ import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 
+import javax.print.attribute.standard.Media;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -79,8 +82,8 @@ class SuratControllerTest {
         pengirimRepository.deleteAll();
         userRepository.deleteAll();
 
-        createUserTest(null, null);
-        createUserTestNoToken(null, null);
+        createUserTest(null, null, null);
+        createUserTestNoToken(null, null, null);
         createPengirimTest();
         createAdminTest();
     }
@@ -97,30 +100,32 @@ class SuratControllerTest {
         userRepository.save(user);
     }
 
-    private void createUserTest(String idUser, String namaUser) {
+    private void createUserTest(String idUser, String namaUser, Integer idBagian) {
         idUser = idUser == null ? "222222222" : idUser;
         namaUser = namaUser == null ? "user2" : namaUser;
+        idBagian = idBagian == null ? JenisBidang.umum.id : idBagian;
 
         User user = new User();
         user.setIdUser(idUser);
         user.setNamaUser(namaUser);
         user.setPassword(BCrypt.hashpw("user123456", BCrypt.gensalt()));
-        user.setBagian(bagianRepository.findById(JenisBidang.umum.id).orElse(null));
+        user.setBagian(bagianRepository.findById(idBagian).orElse(null));
         user.setKelompok(kelompokRepository.findById(JenisKelompok.user.id).orElse(null));
-        user.setToken("user2Test");
+        user.setToken(namaUser+"Test");
         user.setTokenExpiredAt(System.currentTimeMillis() + (1000 * 60 * 24));
         userRepository.save(user);
     }
 
-    private void createUserTestNoToken(String idUser, String namaUser) {
+    private void createUserTestNoToken(String idUser, String namaUser, Integer idBagian) {
         idUser = idUser == null ? "333333333" : idUser;
         namaUser = namaUser == null ? "user3" : namaUser;
+        idBagian = idBagian == null ? JenisBidang.umum.id : idBagian;
 
         User user = new User();
         user.setIdUser(idUser);
         user.setNamaUser(namaUser);
         user.setPassword(BCrypt.hashpw("user123456", BCrypt.gensalt()));
-        user.setBagian(bagianRepository.findById(JenisBidang.umum.id).orElse(null));
+        user.setBagian(bagianRepository.findById(idBagian).orElse(null));
         user.setKelompok(kelompokRepository.findById(JenisKelompok.user.id).orElse(null));
         userRepository.save(user);
     }
@@ -579,7 +584,7 @@ class SuratControllerTest {
 
     @Test
     void testGetSuratFailedNotFound() throws Exception {
-        createUserTest(null, null);
+        createUserTest(null, null, null);
         createSuratTest(2);
         mockMvc.perform(
             get("/api/surat/100")
@@ -602,7 +607,7 @@ class SuratControllerTest {
 
     @Test
     void testGetSuratSuccess() throws Exception {
-        createUserTest(null, null);
+        createUserTest(null, null, null);
         createSuratTest(1);
         List<Surat> all = suratRepository.findAll();
         Surat first = all.getFirst();
@@ -1060,7 +1065,7 @@ class SuratControllerTest {
                     getClass().getResourceAsStream("/pdfData/cv.pdf")
                 ))
                 .header("X-API-TOKEN", "user2Test")
-        ).andDo(result -> {});
+        );
 
         mockMvc.perform(
             get("/api/surat/"+first.getId()+"/download")
@@ -1115,7 +1120,534 @@ class SuratControllerTest {
     }
 
     @Test
-    void testDownloadBerkasSuccess() {
+    void testDownloadBerkasSuccess() throws Exception {
+        createSuratTest(2);
+        List<Surat> all = suratRepository.findAll();
+        Surat first = all.getFirst();
 
+        mockMvc.perform(
+            multipart("/api/surat/"+first.getId()+"/upload")
+                .file(new MockMultipartFile(
+                    "pdfFile",
+                    "cv.pdf",
+                    "application/pdf",
+                    getClass().getResourceAsStream("/pdfData/cv.pdf")
+                ))
+                .header("X-API-TOKEN", "user2Test")
+        ).andDo(result -> {});
+
+        mockMvc.perform(
+            get("/api/surat/"+first.getId()+"/download")
+                .header("X-API-TOKEN", "user2Test")
+        ).andExpectAll(
+            status().isOk(),
+            header().string("Content-Type", MediaType.APPLICATION_PDF_VALUE)
+        );
+    }
+
+    @Test
+    void testListSuratByDateAndBagianSuccessWithAdmin() throws Exception {
+        createUserTest("123456789", "reza", JenisBidang.dp3.id);
+        createUserTest("987654321", "okta", JenisBidang.umum.id);
+
+        CreateSuratRequest request1 = CreateSuratRequest.builder()
+            .idTujuanBagian(JenisBidang.umum.id)
+            .idEkspedisi(1)
+            .perihal("penyampaian dokumen 1")
+            .namaPengirim("kpp a")
+            .nomorSurat("s-8725")
+            .build();
+
+        CreateSuratRequest request2 = CreateSuratRequest.builder()
+            .idTujuanBagian(JenisBidang.dp3.id)
+            .idEkspedisi(1)
+            .perihal("penyampaian dokumen 2")
+            .namaPengirim("kpp b")
+            .nomorSurat("s-8726")
+            .build();
+
+        mockMvc.perform(
+            multipart("/api/surat")
+                .file(new MockMultipartFile(
+                    "data",
+                    null,
+                    "application/json",
+                    objectMapper.writeValueAsBytes(request1)
+                ))
+                .contentType(MediaType.MULTIPART_FORM_DATA)
+                .header("X-API-TOKEN", "oktaTest")
+        ).andExpectAll(
+            status().isOk()
+        );
+
+        mockMvc.perform(
+            multipart("/api/surat")
+                .file(new MockMultipartFile(
+                    "data",
+                    null,
+                    "application/json",
+                    objectMapper.writeValueAsBytes(request2)
+                ))
+                .contentType(MediaType.MULTIPART_FORM_DATA)
+                .header("X-API-TOKEN", "rezaTest")
+        ).andExpectAll(
+            status().isOk()
+        );
+
+        mockMvc.perform(
+            get("/api/surat/getSuratByDate")
+                .param("tanggalTerima", "2024/11/28")
+                .header("X-API-TOKEN", "test")
+        ).andExpectAll(
+            status().isOk()
+        ).andDo(result -> {
+            WebResponse<List<ForListSuratResponse>> response = objectMapper.readValue(
+                result.getResponse().getContentAsString(),
+                new TypeReference<>() {}
+            );
+
+            assertNull(response.getErrors());
+            assertEquals(2, response.getData().size());
+            log.info(response.getData().getFirst().getNomorSurat());
+            log.info(response.getData().get(1).getNomorSurat());
+        });
+    }
+
+    @Test
+    void testListSuratByDateAndBagianSuccess() throws Exception {
+        createUserTest("123456789", "reza", JenisBidang.dp3.id);
+        createUserTest("987654321", "okta", JenisBidang.umum.id);
+
+        CreateSuratRequest request1 = CreateSuratRequest.builder()
+            .idTujuanBagian(JenisBidang.umum.id)
+            .idEkspedisi(1)
+            .perihal("penyampaian dokumen 1")
+            .namaPengirim("kpp a")
+            .nomorSurat("s-8725")
+            .build();
+
+        CreateSuratRequest request2 = CreateSuratRequest.builder()
+            .idTujuanBagian(JenisBidang.dp3.id)
+            .idEkspedisi(1)
+            .perihal("penyampaian dokumen 2")
+            .namaPengirim("kpp b")
+            .nomorSurat("s-8726")
+            .build();
+
+        mockMvc.perform(
+            multipart("/api/surat")
+                .file(new MockMultipartFile(
+                    "data",
+                    null,
+                    "application/json",
+                    objectMapper.writeValueAsBytes(request1)
+                ))
+                .contentType(MediaType.MULTIPART_FORM_DATA)
+                .header("X-API-TOKEN", "oktaTest")
+        ).andExpectAll(
+            status().isOk()
+        );
+
+        mockMvc.perform(
+            multipart("/api/surat")
+                .file(new MockMultipartFile(
+                    "data",
+                    null,
+                    "application/json",
+                    objectMapper.writeValueAsBytes(request2)
+                ))
+                .contentType(MediaType.MULTIPART_FORM_DATA)
+                .header("X-API-TOKEN", "rezaTest")
+        ).andExpectAll(
+            status().isOk()
+        );
+
+        mockMvc.perform(
+            get("/api/surat/getSuratByDate")
+                .param("tanggalTerima", "2024/11/28")
+                .header("X-API-TOKEN", "rezaTest")
+        ).andExpectAll(
+            status().isOk()
+        ).andDo(result -> {
+            WebResponse<List<ForListSuratResponse>> response = objectMapper.readValue(
+                result.getResponse().getContentAsString(),
+                new TypeReference<>() {}
+            );
+
+            assertNull(response.getErrors());
+            assertEquals(1, response.getData().size());
+            assertEquals("s-8726", response.getData().getFirst().getNomorSurat());
+            log.info(response.getData().getFirst().getNomorSurat());
+        });
+    }
+
+    @Test
+    void testListSuratByDateAndBagianFailedNotLogin() throws Exception {
+        createUserTest("123456789", "reza", JenisBidang.dp3.id);
+        createUserTest("987654321", "okta", JenisBidang.umum.id);
+
+        CreateSuratRequest request1 = CreateSuratRequest.builder()
+            .idTujuanBagian(JenisBidang.umum.id)
+            .idEkspedisi(1)
+            .perihal("penyampaian dokumen 1")
+            .namaPengirim("kpp a")
+            .nomorSurat("s-8725")
+            .build();
+
+        CreateSuratRequest request2 = CreateSuratRequest.builder()
+            .idTujuanBagian(JenisBidang.dp3.id)
+            .idEkspedisi(1)
+            .perihal("penyampaian dokumen 2")
+            .namaPengirim("kpp b")
+            .nomorSurat("s-8726")
+            .build();
+
+        mockMvc.perform(
+            multipart("/api/surat")
+                .file(new MockMultipartFile(
+                    "data",
+                    null,
+                    "application/json",
+                    objectMapper.writeValueAsBytes(request1)
+                ))
+                .contentType(MediaType.MULTIPART_FORM_DATA)
+                .header("X-API-TOKEN", "oktaTest")
+        ).andExpectAll(
+            status().isOk()
+        );
+
+        mockMvc.perform(
+            multipart("/api/surat")
+                .file(new MockMultipartFile(
+                    "data",
+                    null,
+                    "application/json",
+                    objectMapper.writeValueAsBytes(request2)
+                ))
+                .contentType(MediaType.MULTIPART_FORM_DATA)
+                .header("X-API-TOKEN", "rezaTest")
+        ).andExpectAll(
+            status().isOk()
+        );
+
+        mockMvc.perform(
+            get("/api/surat/getSuratByDate")
+                .param("tanggalTerima", "2024/11/28")
+        ).andExpectAll(
+            status().isUnauthorized()
+        ).andDo(result -> {
+            WebResponse<String> response = objectMapper.readValue(
+                result.getResponse().getContentAsString(),
+                new TypeReference<>() {}
+            );
+
+            assertNotNull(response.getErrors());
+            log.info(response.getErrors());
+        });
+    }
+
+    @Test
+    void testArchiveSuratsSuccess() throws Exception {
+        createUserTest("123456789", "reza", JenisBidang.dp3.id);
+        createUserTest("987654321", "okta", JenisBidang.umum.id);
+
+        CreateSuratRequest request1 = CreateSuratRequest.builder()
+            .idTujuanBagian(JenisBidang.umum.id)
+            .idEkspedisi(1)
+            .perihal("penyampaian dokumen 1")
+            .namaPengirim("kpp a")
+            .nomorSurat("s-8725")
+            .build();
+
+        CreateSuratRequest request2 = CreateSuratRequest.builder()
+            .idTujuanBagian(JenisBidang.dp3.id)
+            .idEkspedisi(1)
+            .perihal("penyampaian dokumen 2")
+            .namaPengirim("kpp b")
+            .nomorSurat("s-8726")
+            .build();
+
+        mockMvc.perform(
+            multipart("/api/surat")
+                .file(new MockMultipartFile(
+                    "data",
+                    null,
+                    "application/json",
+                    objectMapper.writeValueAsBytes(request1)
+                ))
+                .contentType(MediaType.MULTIPART_FORM_DATA)
+                .header("X-API-TOKEN", "oktaTest")
+        ).andExpectAll(
+            status().isOk()
+        );
+
+        mockMvc.perform(
+            multipart("/api/surat")
+                .file(new MockMultipartFile(
+                    "data",
+                    null,
+                    "application/json",
+                    objectMapper.writeValueAsBytes(request2)
+                ))
+                .contentType(MediaType.MULTIPART_FORM_DATA)
+                .header("X-API-TOKEN", "rezaTest")
+        ).andExpectAll(
+            status().isOk()
+        );
+
+        List<Surat> all = suratRepository.findAll();
+        List<Integer> listIdSurats = new ArrayList<>();
+        listIdSurats.add(all.getFirst().getId());
+
+        ArchiveSuratsRequest archiveSuratsRequest = ArchiveSuratsRequest.builder()
+            .listIdSurat(listIdSurats).build();
+
+        mockMvc.perform(
+            post("/api/surat/archive")
+                .header("X-API-TOKEN", "oktaTest")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(archiveSuratsRequest))
+        ).andExpectAll(
+            status().isOk()
+        ).andDo(result -> {
+            WebResponse<String> response = objectMapper.readValue(
+                result.getResponse().getContentAsString(),
+                new TypeReference<>() {}
+            );
+
+            assertNull(response.getErrors());
+            assertNotNull(response.getData());
+            log.info(response.getData());
+        });
+    }
+
+    @Test
+    void testArchiveSuratsFailedNotLogin() throws Exception {
+        createUserTest("123456789", "reza", JenisBidang.dp3.id);
+        createUserTest("987654321", "okta", JenisBidang.umum.id);
+
+        CreateSuratRequest request1 = CreateSuratRequest.builder()
+            .idTujuanBagian(JenisBidang.umum.id)
+            .idEkspedisi(1)
+            .perihal("penyampaian dokumen 1")
+            .namaPengirim("kpp a")
+            .nomorSurat("s-8725")
+            .build();
+
+        CreateSuratRequest request2 = CreateSuratRequest.builder()
+            .idTujuanBagian(JenisBidang.dp3.id)
+            .idEkspedisi(1)
+            .perihal("penyampaian dokumen 2")
+            .namaPengirim("kpp b")
+            .nomorSurat("s-8726")
+            .build();
+
+        mockMvc.perform(
+            multipart("/api/surat")
+                .file(new MockMultipartFile(
+                    "data",
+                    null,
+                    "application/json",
+                    objectMapper.writeValueAsBytes(request1)
+                ))
+                .contentType(MediaType.MULTIPART_FORM_DATA)
+                .header("X-API-TOKEN", "oktaTest")
+        ).andExpectAll(
+            status().isOk()
+        );
+
+        mockMvc.perform(
+            multipart("/api/surat")
+                .file(new MockMultipartFile(
+                    "data",
+                    null,
+                    "application/json",
+                    objectMapper.writeValueAsBytes(request2)
+                ))
+                .contentType(MediaType.MULTIPART_FORM_DATA)
+                .header("X-API-TOKEN", "rezaTest")
+        ).andExpectAll(
+            status().isOk()
+        );
+
+        List<Surat> all = suratRepository.findAll();
+        List<Integer> listIdSurats = new ArrayList<>();
+        listIdSurats.add(all.getFirst().getId());
+
+        ArchiveSuratsRequest archiveSuratsRequest = ArchiveSuratsRequest.builder()
+            .listIdSurat(listIdSurats).build();
+
+        mockMvc.perform(
+            post("/api/surat/archive")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(archiveSuratsRequest))
+        ).andExpectAll(
+            status().isUnauthorized()
+        ).andDo(result -> {
+            WebResponse<String> response = objectMapper.readValue(
+                result.getResponse().getContentAsString(),
+                new TypeReference<>() {}
+            );
+
+            assertNotNull(response.getErrors());
+            log.info(response.getErrors());
+        });
+    }
+
+    @Test
+    void testArchiveSuratsFailedNotStaff() throws Exception {
+        createUserTest("123456789", "reza", JenisBidang.dp3.id);
+        createUserTest("987654321", "okta", JenisBidang.umum.id);
+
+        CreateSuratRequest request1 = CreateSuratRequest.builder()
+            .idTujuanBagian(JenisBidang.umum.id)
+            .idEkspedisi(1)
+            .perihal("penyampaian dokumen 1")
+            .namaPengirim("kpp a")
+            .nomorSurat("s-8725")
+            .build();
+
+        CreateSuratRequest request2 = CreateSuratRequest.builder()
+            .idTujuanBagian(JenisBidang.dp3.id)
+            .idEkspedisi(1)
+            .perihal("penyampaian dokumen 2")
+            .namaPengirim("kpp b")
+            .nomorSurat("s-8726")
+            .build();
+
+        mockMvc.perform(
+            multipart("/api/surat")
+                .file(new MockMultipartFile(
+                    "data",
+                    null,
+                    "application/json",
+                    objectMapper.writeValueAsBytes(request1)
+                ))
+                .contentType(MediaType.MULTIPART_FORM_DATA)
+                .header("X-API-TOKEN", "oktaTest")
+        ).andExpectAll(
+            status().isOk()
+        );
+
+        mockMvc.perform(
+            multipart("/api/surat")
+                .file(new MockMultipartFile(
+                    "data",
+                    null,
+                    "application/json",
+                    objectMapper.writeValueAsBytes(request2)
+                ))
+                .contentType(MediaType.MULTIPART_FORM_DATA)
+                .header("X-API-TOKEN", "rezaTest")
+        ).andExpectAll(
+            status().isOk()
+        );
+
+        List<Surat> all = suratRepository.findAll();
+        List<Integer> listIdSurats = new ArrayList<>();
+        listIdSurats.add(all.getFirst().getId());
+
+        ArchiveSuratsRequest archiveSuratsRequest = ArchiveSuratsRequest.builder()
+            .listIdSurat(listIdSurats).build();
+
+        mockMvc.perform(
+            post("/api/surat/archive")
+                .header("X-API-TOKEN", "rezaTest")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(archiveSuratsRequest))
+        ).andExpectAll(
+            status().isUnauthorized()
+        ).andDo(result -> {
+            WebResponse<String> response = objectMapper.readValue(
+                result.getResponse().getContentAsString(),
+                new TypeReference<>() {}
+            );
+
+            assertNotNull(response.getErrors());
+            log.info(response.getErrors());
+        });
+    }
+
+    @Test
+    void testArchiveSuratsFailedAlreadyArchived() throws Exception {
+        createUserTest("123456789", "reza", JenisBidang.dp3.id);
+        createUserTest("987654321", "okta", JenisBidang.umum.id);
+
+        CreateSuratRequest request1 = CreateSuratRequest.builder()
+            .idTujuanBagian(JenisBidang.umum.id)
+            .idEkspedisi(1)
+            .perihal("penyampaian dokumen 1")
+            .namaPengirim("kpp a")
+            .nomorSurat("s-8725")
+            .build();
+
+        CreateSuratRequest request2 = CreateSuratRequest.builder()
+            .idTujuanBagian(JenisBidang.dp3.id)
+            .idEkspedisi(1)
+            .perihal("penyampaian dokumen 2")
+            .namaPengirim("kpp b")
+            .nomorSurat("s-8726")
+            .build();
+
+        mockMvc.perform(
+            multipart("/api/surat")
+                .file(new MockMultipartFile(
+                    "data",
+                    null,
+                    "application/json",
+                    objectMapper.writeValueAsBytes(request1)
+                ))
+                .contentType(MediaType.MULTIPART_FORM_DATA)
+                .header("X-API-TOKEN", "oktaTest")
+        ).andExpectAll(
+            status().isOk()
+        );
+
+        mockMvc.perform(
+            multipart("/api/surat")
+                .file(new MockMultipartFile(
+                    "data",
+                    null,
+                    "application/json",
+                    objectMapper.writeValueAsBytes(request2)
+                ))
+                .contentType(MediaType.MULTIPART_FORM_DATA)
+                .header("X-API-TOKEN", "rezaTest")
+        ).andExpectAll(
+            status().isOk()
+        );
+
+        List<Surat> all = suratRepository.findAll();
+        List<Integer> listIdSurats = new ArrayList<>();
+        listIdSurats.add(all.getFirst().getId());
+
+        ArchiveSuratsRequest archiveSuratsRequest = ArchiveSuratsRequest.builder()
+            .listIdSurat(listIdSurats).build();
+
+        mockMvc.perform(
+            post("/api/surat/archive")
+                .header("X-API-TOKEN", "oktaTest")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(archiveSuratsRequest))
+        ).andExpectAll(
+            status().isOk()
+        );
+
+        mockMvc.perform(
+            post("/api/surat/archive")
+                .header("X-API-TOKEN", "oktaTest")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(archiveSuratsRequest))
+        ).andExpectAll(
+            status().isNotAcceptable()
+        ).andDo(result -> {
+            WebResponse<String> response = objectMapper.readValue(
+                result.getResponse().getContentAsString(),
+                new TypeReference<>() {}
+            );
+
+            assertNotNull(response.getErrors());
+            log.info(response.getErrors());
+        });
     }
 }

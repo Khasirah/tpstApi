@@ -1,5 +1,6 @@
 package com.peppo.tpstapi.service.validation;
 
+import com.peppo.tpstapi.entity.Surat;
 import com.peppo.tpstapi.entity.User;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -14,4 +15,8 @@ public interface IValidationService {
     void isPdf (MultipartFile pdfFile);
 
     boolean isUserExist(String idUser);
+
+    void isArchive(Surat surat);
+
+    void isArchiveByStaff(Surat surat, User user);
 }

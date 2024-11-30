@@ -1,5 +1,6 @@
 package com.peppo.tpstapi.service.validation;
 
+import com.peppo.tpstapi.entity.Surat;
 import com.peppo.tpstapi.entity.User;
 import com.peppo.tpstapi.model.JenisKelompok;
 import com.peppo.tpstapi.model.PesanError;
@@ -66,5 +67,24 @@ public class ValidationServiceImp implements IValidationService {
             return false;
         }
         throw new ResponseStatusException(HttpStatus.BAD_REQUEST, idUser + " " + PesanError.userExist.message);
+    }
+
+    @Override
+    public void isArchive(Surat surat) {
+        if (!Objects.isNull(surat.getPetugasBidang())) {
+            throw new ResponseStatusException(
+                HttpStatus.NOT_ACCEPTABLE,
+                surat.getNomorSurat() + " " + PesanError.alreadyArchived.message
+            );
+        }
+    }
+
+    @Override
+    public void isArchiveByStaff(Surat surat, User user) {
+        if (surat.getBagian() != user.getBagian()) {
+            throw new ResponseStatusException(
+                HttpStatus.UNAUTHORIZED,
+                user.getNamaUser() + " " + PesanError.unauthorizedToArchive.message + " " + surat.getNomorSurat());
+        }
     }
 }

@@ -1,15 +1,14 @@
 package com.peppo.tpstapi.controller;
 
 import com.peppo.tpstapi.entity.User;
-import com.peppo.tpstapi.model.request.CreateSuratRequest;
-import com.peppo.tpstapi.model.request.SearchSuratByDateRequest;
-import com.peppo.tpstapi.model.request.SearchSuratByYearRequest;
-import com.peppo.tpstapi.model.request.UpdateSuratRequest;
+import com.peppo.tpstapi.model.request.*;
 import com.peppo.tpstapi.model.response.ForListSuratResponse;
 import com.peppo.tpstapi.model.response.PagingResponse;
 import com.peppo.tpstapi.model.response.SuratResponse;
 import com.peppo.tpstapi.model.response.WebResponse;
 import com.peppo.tpstapi.service.surat.SuratServiceImp;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
@@ -25,6 +24,7 @@ import java.util.List;
 @CrossOrigin
 public class SuratController {
 
+    private static final Logger log = LoggerFactory.getLogger(SuratController.class);
     @Autowired
     private SuratServiceImp suratServiceImp;
 
@@ -154,7 +154,7 @@ public class SuratController {
         path = "/api/surat/getSuratByDate",
         produces = MediaType.APPLICATION_JSON_VALUE
     )
-    public WebResponse<List<ForListSuratResponse>> listSuratByDate(
+    public WebResponse<List<ForListSuratResponse>> listSuratByDateAndBagian(
         User user,
         @RequestParam(value = "tanggalTerima", required = false) Date tanggalTerima,
         @RequestParam(value = "page", required = false, defaultValue = "0") Integer page,
@@ -165,7 +165,7 @@ public class SuratController {
             .page(page)
             .size(size).build();
 
-        Page<ForListSuratResponse> forListSuratResponses = suratServiceImp.listSuratByDate(user, request);
+        Page<ForListSuratResponse> forListSuratResponses = suratServiceImp.listSuratByDateAndBagian(user, request);
         return WebResponse.<List<ForListSuratResponse>>builder()
             .data(forListSuratResponses.getContent())
             .paging(PagingResponse.builder()
@@ -173,6 +173,19 @@ public class SuratController {
                 .size(forListSuratResponses.getSize())
                 .totalPage(forListSuratResponses.getTotalPages())
                 .build())
-            .build() ;
+            .build();
+    }
+
+    @PostMapping(
+        path = "/api/surat/archive",
+        consumes = MediaType.APPLICATION_JSON_VALUE
+    )
+    public WebResponse<String> archiveSurats(
+        User user,
+        @RequestBody ArchiveSuratsRequest request
+    ) {
+        String response = suratServiceImp.archiveSurats(user, request);
+        return WebResponse.<String>builder()
+            .data(response).build();
     }
 }

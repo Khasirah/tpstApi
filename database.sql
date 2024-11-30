@@ -182,3 +182,7 @@ delete from surat;
 
 select * from users;
 select * from surat;
+select
+    *
+from surat
+where date(created_date) = '2024-11-28;'
