@@ -7,8 +7,6 @@ import com.peppo.tpstapi.model.response.PagingResponse;
 import com.peppo.tpstapi.model.response.SuratResponse;
 import com.peppo.tpstapi.model.response.WebResponse;
 import com.peppo.tpstapi.service.surat.SuratServiceImp;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
