@@ -28,14 +28,14 @@ import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 
-import javax.print.attribute.standard.Media;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -680,8 +680,6 @@ class SuratControllerTest {
     @Test
     void testUpdateSuratFailedNotFound() throws Exception {
         createSuratTest(2);
-        List<Surat> all = suratRepository.findAll();
-        Surat first = all.getFirst();
 
         UpdateSuratRequest request = UpdateSuratRequest.builder()
             .idPosisi(2)
@@ -883,8 +881,6 @@ class SuratControllerTest {
     @Test
     void testDeleteSuratFailedNotFound() throws Exception {
         createSuratTest(2);
-        List<Surat> all = suratRepository.findAll();
-        Surat first = all.getFirst();
 
         mockMvc.perform(
             delete("/api/surat/10")
@@ -1099,7 +1095,7 @@ class SuratControllerTest {
                     getClass().getResourceAsStream("/pdfData/cv.pdf")
                 ))
                 .header("X-API-TOKEN", "user2Test")
-        ).andDo(result -> {});
+        );
 
         mockMvc.perform(
             get("/api/surat/"+first.getId()+1+"/download")
@@ -1134,7 +1130,7 @@ class SuratControllerTest {
                     getClass().getResourceAsStream("/pdfData/cv.pdf")
                 ))
                 .header("X-API-TOKEN", "user2Test")
-        ).andDo(result -> {});
+        );
 
         mockMvc.perform(
             get("/api/surat/"+first.getId()+"/download")

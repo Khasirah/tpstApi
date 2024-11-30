@@ -24,7 +24,6 @@ import java.util.List;
 @CrossOrigin
 public class SuratController {
 
-    private static final Logger log = LoggerFactory.getLogger(SuratController.class);
     @Autowired
     private SuratServiceImp suratServiceImp;
 
