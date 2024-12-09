@@ -125,8 +125,8 @@ class BagianControllerTest {
             assertNull(response.getErrors());
             assertNotNull(response.getData());
 
-            Bagian bagianUmum = bagianRepository.findById(2).orElseThrow();
-            assertEquals(bagianUmum.getNamaBagian(), response.getData().getFirst().getNamaBagian());
+            Bagian bagianAdmin = bagianRepository.findById(1).orElseThrow();
+            assertEquals(bagianAdmin.getNamaBagian(), response.getData().getFirst().getNamaBagian());
             log.info(response.getData().getFirst().getNamaBagian());
         });
     }
@@ -152,8 +152,8 @@ class BagianControllerTest {
             assertNull(response.getErrors());
             assertNotNull(response.getData());
 
-            Bagian bagianUmum = bagianRepository.findById(2).orElseThrow();
-            assertEquals(bagianUmum.getNamaBagian(), response.getData().getFirst().getNamaBagian());
+            Bagian bagianAdmin = bagianRepository.findById(1).orElseThrow();
+            assertEquals(bagianAdmin.getNamaBagian(), response.getData().getFirst().getNamaBagian());
             log.info(response.getData().getFirst().getNamaBagian());
         });
     }

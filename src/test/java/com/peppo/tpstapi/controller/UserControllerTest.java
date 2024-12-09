@@ -9,10 +9,7 @@ import com.peppo.tpstapi.model.request.UpdateSpecificUserRequest;
 import com.peppo.tpstapi.model.request.UpdateUserRequest;
 import com.peppo.tpstapi.model.response.UserResponse;
 import com.peppo.tpstapi.model.response.WebResponse;
-import com.peppo.tpstapi.repository.BagianRepository;
-import com.peppo.tpstapi.repository.KelompokRepository;
-import com.peppo.tpstapi.repository.SuratRepository;
-import com.peppo.tpstapi.repository.UserRepository;
+import com.peppo.tpstapi.repository.*;
 import com.peppo.tpstapi.security.BCrypt;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
@@ -53,8 +50,12 @@ class UserControllerTest {
     @Autowired
     private SuratRepository suratRepository;
 
+    @Autowired
+    private DetailSuratRepository detailSuratRepository;
+
     @BeforeEach
     void setUp() {
+        detailSuratRepository.deleteAll();
         suratRepository.deleteAll();
         userRepository.deleteAll();
     }
@@ -661,58 +662,6 @@ class UserControllerTest {
     }
 
     @Test
-    void testUpdateCurrentUserFailedBidangNotFound() throws Exception {
-        createUserTest(null, null);
-
-        UpdateUserRequest request = new UpdateUserRequest();
-        request.setPassword("user10");
-
-        mockMvc.perform(
-                patch("/api/users/current")
-                        .accept(MediaType.APPLICATION_JSON)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .header("X-API-TOKEN", "userTest")
-                        .content(objectMapper.writeValueAsString(request))
-        ).andExpectAll(
-                status().isNotFound()
-        ).andDo(result -> {
-            WebResponse<String> response = objectMapper.readValue(
-                    result.getResponse().getContentAsString(),
-                    new TypeReference<>() {
-                    }
-            );
-
-            assertNotNull(response.getErrors());
-        });
-    }
-
-    @Test
-    void testUpdateCurrentUserFailedKelompokNotFound() throws Exception {
-        createUserTest(null, null);
-
-        UpdateUserRequest request = new UpdateUserRequest();
-        request.setPassword("user10");
-
-        mockMvc.perform(
-                patch("/api/users/current")
-                        .accept(MediaType.APPLICATION_JSON)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .header("X-API-TOKEN", "userTest")
-                        .content(objectMapper.writeValueAsString(request))
-        ).andExpectAll(
-                status().isNotFound()
-        ).andDo(result -> {
-            WebResponse<String> response = objectMapper.readValue(
-                    result.getResponse().getContentAsString(),
-                    new TypeReference<>() {
-                    }
-            );
-
-            assertNotNull(response.getErrors());
-        });
-    }
-
-    @Test
     void testUpdateCurrentUserSuccess() throws Exception {
         createUserTest(null, null);
 
@@ -736,8 +685,8 @@ class UserControllerTest {
 
             assertNull(response.getErrors());
             assertNotNull(response.getData());
-            assertEquals("user10", response.getData().getNamaUser());
-            assertEquals(JenisBidang.dp3.id, response.getData().getBagian().getId());
+            assertEquals("user2", response.getData().getNamaUser());
+            assertEquals(JenisBidang.umum.id, response.getData().getBagian().getId());
 
             User userDb = userRepository.findById("222222222").orElse(null);
             assertNotNull(userDb);

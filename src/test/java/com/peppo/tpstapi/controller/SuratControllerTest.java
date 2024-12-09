@@ -28,6 +28,7 @@ import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -1190,9 +1191,14 @@ class SuratControllerTest {
             status().isOk()
         );
 
+        LocalDate tanggal = LocalDate.now();
+        String tanggalTerima = tanggal.getYear()+"/"+tanggal.getMonth()+"/"+tanggal.getDayOfMonth();
+
         mockMvc.perform(
             get("/api/surat/getSuratByDate")
-                .param("tanggalTerima", "2024/11/28")
+                .param("tanggalTerima", tanggalTerima)
+                .param("page", "0")
+                .param("size", "20")
                 .header("X-API-TOKEN", "test")
         ).andExpectAll(
             status().isOk()
@@ -1204,8 +1210,6 @@ class SuratControllerTest {
 
             assertNull(response.getErrors());
             assertEquals(2, response.getData().size());
-            log.info(response.getData().getFirst().getNomorSurat());
-            log.info(response.getData().get(1).getNomorSurat());
         });
     }
 
@@ -1258,9 +1262,14 @@ class SuratControllerTest {
             status().isOk()
         );
 
+        LocalDate tanggal = LocalDate.now();
+        String tanggalTerima = tanggal.getYear()+"/"+tanggal.getMonth()+"/"+tanggal.getDayOfMonth();
+
         mockMvc.perform(
             get("/api/surat/getSuratByDate")
-                .param("tanggalTerima", "2024/11/28")
+                .param("tanggalTerima", tanggalTerima)
+                .param("page", "0")
+                .param("size", "20")
                 .header("X-API-TOKEN", "rezaTest")
         ).andExpectAll(
             status().isOk()
@@ -1270,6 +1279,7 @@ class SuratControllerTest {
                 new TypeReference<>() {}
             );
 
+            log.info(tanggalTerima);
             assertNull(response.getErrors());
             assertEquals(1, response.getData().size());
             assertEquals("s-8726", response.getData().getFirst().getNomorSurat());
