@@ -24,7 +24,7 @@ public class WebConfiguration implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/api/surat/*/download")
-            .allowedOrigins("http://localhost:5173")
+            .allowedOrigins("http://localhost:5173", "http://localhost:5544", "http://10.6.254.253:5544")
             .allowedMethods("GET")
             .allowedHeaders("*")
             .allowCredentials(true);

@@ -7,9 +7,7 @@ import com.peppo.tpstapi.model.*;
 import com.peppo.tpstapi.model.request.LoginUserRequest;
 import com.peppo.tpstapi.model.response.TokenResponse;
 import com.peppo.tpstapi.model.response.WebResponse;
-import com.peppo.tpstapi.repository.BagianRepository;
-import com.peppo.tpstapi.repository.KelompokRepository;
-import com.peppo.tpstapi.repository.UserRepository;
+import com.peppo.tpstapi.repository.*;
 import com.peppo.tpstapi.security.BCrypt;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
@@ -44,8 +42,16 @@ class AuthControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @Autowired
+    private DetailSuratRepository detailSuratRepository;
+
+    @Autowired
+    private SuratRepository suratRepository;
+
     @BeforeEach
     void setUp() {
+        detailSuratRepository.deleteAll();
+        suratRepository.deleteAll();
         userRepository.deleteAll();
     }
 
